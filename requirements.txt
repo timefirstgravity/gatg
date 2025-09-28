@@ -1,0 +1,23 @@
+# GATG Project Dependencies
+# Install with: sage -pip install -r requirements.txt
+# Or within SageMath environment: pip install -r requirements.txt
+
+# CORE REQUIREMENT: SageMath
+# SageMath must be installed first via:
+#   - conda install -c conda-forge sage
+#   - or system package manager (apt, brew, etc.)
+#   - or download from sagemath.org
+#
+# All computations use SageMath's symbolic mathematics engine
+# and all scripts must be run with: sage -python script.py
+
+# Testing framework (only dependency beyond SageMath)
+pytest>=6.0.0
+
+# Note: This project uses ONLY SageMath for all computations
+# All mathematical operations use symbolic computation via sage.all
+# No external numerical libraries (numpy, scipy) are required
+# No external symbolic libraries (sympy) are required
+# No cosmology-specific packages are used
+# All functionality is implemented through SageMath's comprehensive
+# mathematical framework for rigorous symbolic verification
