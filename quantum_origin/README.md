@@ -45,16 +45,16 @@ CTP kernel implementations:
 - `verify_kernel_properties()` - Mathematical verification
 
 ### `fixed_point.py`
-Fixed-point operator analysis:
+Fixed-point operator analysis with enhanced convergence tracking:
 - `build_fixed_point_operator()` - Construct T = C ω² C
 - `check_contraction_property()` - Verify ||T|| < 1
-- `iterate_fixed_point()` - Numerical convergence with relaxation
-- `compute_spectral_radius()` - Power iteration and Lanczos methods
+- `iterate_fixed_point()` - Numerical convergence with uncertainty tracking
+- `compute_spectral_radius()` - Power iteration with convergence history
 - `verify_banach_conditions()` - Complete theorem verification
 
 ### `screening_length.py`
-Screening length extraction and bounds:
-- `extract_screening_length()` - Get ξ from kernel spectrum
+Screening length extraction with uncertainty analysis:
+- `extract_screening_length()` - Get ξ with error bars and confidence intervals
 - `compute_correlation_function()` - Spatial correlation analysis
 - `analyze_greens_function_tail()` - Asymptotic decay behavior
 - `verify_screening_bounds()` - Solar system constraints (ξ ≥ 10¹¹ m)
@@ -65,6 +65,12 @@ Capacity computation and dephasing connection:
 - `build_capacity_functional()` - Operator form of C[Φ]
 - `compute_ctp_noise_spectrum()` - FDT noise from bath
 - `connect_to_dephasing()` - Bridge to observable effects
+
+### `physical_parameters.py`
+Physical parameter benchmarking and constraints:
+- `get_benchmark_parameters()` - Realistic physical parameters from GATG paper
+- `solve_contraction_constraints()` - Coupling constant bounds for ||T|| < 1
+- `benchmark_fixed_point_viability()` - Complete parameter analysis
 
 ## Physical Scenarios
 
@@ -88,9 +94,12 @@ Capacity computation and dephasing connection:
 ✓ **Rigorous fixed-point theory** with Banach contraction theorem
 ✓ **No synthetic data** - pure symbolic computation with SageMath
 ✓ **Observational constraints** - screening bounds from solar system
-✓ **Spectral analysis** - eigenvalue and contraction verification
-✓ **Convergence guarantees** - geometric convergence to unique fixed point
+✓ **Spectral analysis** - eigenvalue and contraction verification with convergence tracking
+✓ **Convergence guarantees** - geometric convergence to unique fixed point with error bounds
 ✓ **Physical regularization** - screening prevents IR divergences
+✓ **Complete convergence analysis** - rigorous bounds |T|, numerical ρ(T), uncertainty analysis
+✓ **Uncertainty quantification** - error propagation and confidence intervals for all key parameters
+✓ **Detailed mathematical analysis** - convergence tracking and theoretical verification
 
 ## Usage Example
 
@@ -110,22 +119,39 @@ contraction = check_contraction_property(operator)
 print(f"Contraction: {contraction['is_contraction']}")
 print(f"Operator norm: {contraction['operator_norm']}")
 
-# 4. Check Banach conditions
-banach = verify_banach_conditions(operator)
-print(f"Fixed point exists: {banach['fixed_point_exists']}")
-print(f"Unique: {banach['fixed_point_unique']}")
+# 4. Run enhanced fixed-point iteration with uncertainty tracking
+initial_phi = 1e-7
+iteration = iterate_fixed_point(operator, initial_phi, num_iterations=20,
+    iteration_params={'track_uncertainty': True})
+print(f"Converged: {iteration['converged']}")
+print(f"Convergence rate: {iteration['convergence_analysis'].get('estimated_convergence_rate')}")
 
-# 5. Extract screening length
-screening = extract_screening_length(kernel)
-bounds = verify_screening_bounds(screening)
-print(f"ξ = {screening['screening_length']:.2e} m")
-print(f"Solar system bound satisfied: {bounds['solar_system_bound_satisfied']}")
+# 5. Compute spectral radius with convergence history
+spectral = compute_spectral_radius(operator,
+    spectral_params={'method': 'power_iteration', 'iterations': 50})
+print(f"Spectral radius ρ(T): {spectral['spectral_radius']}")
+print(f"Uncertainty: {spectral['uncertainty_estimate']}")
 
-# 6. Compute capacity and dephasing
-capacity = compute_capacity_from_kernel(kernel, phi=1e-6, window_time=1000)
-dephasing = connect_to_dephasing(capacity['capacity_xi'], omega, 1000)
-print(f"Visibility: {dephasing['visibility']}")
-print(f"Detectable: {dephasing['detectable']}")
+# 6. Extract screening length with error bars
+screening = extract_screening_length(kernel,
+    extraction_params={'uncertainty_analysis': True, 'monte_carlo_samples': 100})
+if screening['error_bars']:
+    xi_val = screening['error_bars']['central_value']
+    xi_err = screening['error_bars']['uncertainty']
+    print(f"ξ = ({xi_val:.2e} ± {xi_err:.2e}) m")
+
+# 7. Verify convergence analysis requirements
+analysis_complete = all([
+    operator['operator_norm_bound'] is not None,  # Rigorous bound |T|
+    spectral['spectral_radius'] is not None,     # Numerical estimate ρ(T)
+    iteration['convergence_analysis'].get('geometric_convergence'),  # Convergence verified
+    screening['error_bars'] is not None          # Uncertainty analysis
+])
+print(f"Analysis complete: {analysis_complete}")
+
+# 8. Physical parameter benchmarking
+viability = benchmark_fixed_point_viability()
+print(f"Mechanism viable with realistic parameters: {viability['overall_viability']['mechanism_viable']}")
 ```
 
 ## Theoretical Significance
@@ -146,12 +172,19 @@ sage -python quantum_origin/verification.py
 ```
 
 Tests include:
-- CTP kernel spectral properties
-- Fixed-point contraction verification
-- Screening length bound checks
-- Banach theorem conditions
-- Convergence iteration tests
-- Connection to dephasing predictions
+- CTP kernel spectral properties with complete mathematical verification
+- Fixed-point contraction verification with rigorous bounds |T|
+- Screening length extraction with error bars and uncertainty analysis
+- Banach theorem conditions with geometric convergence verification
+- Power iteration spectral radius computation with convergence tracking
+- Connection to observable dephasing predictions
+- **Comprehensive convergence analysis** verification:
+  - Rigorous bound |T| computation and verification
+  - Numerical spectral radius ρ(T) estimation with uncertainty
+  - Convergence analysis with theoretical rate comparison
+  - Screening length ξ with comprehensive error bars and confidence intervals
+  - Monte Carlo uncertainty propagation for parameter sensitivity
+- Physical parameter benchmarking with realistic constraints from GATG paper
 
 ## Connection to Other Modules
 

@@ -129,3 +129,8 @@ recovered_*.txt
 *.a
 *.so
 *.dylib
+
+# Generated plots and visualizations
+quantum_origin/plots/
+
+sage_docs/

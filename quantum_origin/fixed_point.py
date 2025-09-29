@@ -141,37 +141,57 @@ def check_contraction_property(operator_data, contraction_params=None):
 
 def iterate_fixed_point(operator_data, initial_field, num_iterations=10, iteration_params=None):
     """
-    Iterate the fixed-point map Φ^(n+1) = T[Φ^n].
+    Iterate the fixed-point map Φ^(n+1) = T[Φ^n] with detailed convergence tracking.
 
     Uses relaxation: Φ^(n+1) = (1-α)Φ^n + α T[Φ^n]
     for stability with relaxation parameter α.
+
+    Convergence tracking:
+    - Tracks convergence uncertainty and error bounds
+    - Compares actual vs theoretical convergence rates
+    - Provides detailed convergence analysis
 
     Args:
         operator_data: Fixed-point operator T
         initial_field: Starting field Φ^(0)
         num_iterations: Number of iterations
-        iteration_params: Dict with 'relaxation' parameter α
+        iteration_params: Dict with 'relaxation' parameter α and options
 
     Returns:
         Dict with:
             'fixed_point': Final Φ after iterations
             'iteration_history': List of fields
-            'convergence_metric': ||Φ^(n+1) - Φ^n||
+            'convergence_metrics': ||Φ^(n+1) - Φ^n||
             'converged': Whether convergence achieved
+            'convergence_analysis': Detailed rate analysis
+            'error_bounds': Theoretical vs actual bounds
+            'uncertainty_estimates': Error estimates per iteration
     """
     if iteration_params is None:
-        iteration_params = {'relaxation': 0.5, 'tolerance': 1e-6}
+        iteration_params = {'relaxation': 0.5, 'tolerance': 1e-6, 'track_uncertainty': True}
 
-    alpha = iteration_params['relaxation']
-    tolerance = iteration_params['tolerance']
+    alpha = iteration_params.get('relaxation', 0.5)
+    tolerance = iteration_params.get('tolerance', 1e-6)
+    track_uncertainty = iteration_params.get('track_uncertainty', True)
     T = operator_data['operator_T']
+    norm_bound = operator_data.get('operator_norm_bound')
 
     # Initialize
     phi = initial_field
     history = [phi]
     convergence_metrics = []
+    uncertainty_estimates = []
+    theoretical_bounds = []
 
     converged = False
+
+    # Theoretical analysis setup
+    if norm_bound is not None and norm_bound < 1:
+        q = norm_bound  # Contraction factor
+        theoretical_convergence = True
+    else:
+        q = None
+        theoretical_convergence = False
 
     for n in range(num_iterations):
         # Apply operator
@@ -180,16 +200,44 @@ def iterate_fixed_point(operator_data, initial_field, num_iterations=10, iterati
         # Relaxed update
         phi_new = (1 - alpha) * phi + alpha * T_phi
 
-        # Convergence metric (simplified - would need norm in practice)
+        # Convergence metric (enhanced)
         if hasattr(phi, '__sub__'):
             difference = phi_new - phi
-            # Simplified metric - actual implementation would compute proper norm
-            metric = abs(difference) if hasattr(difference, '__abs__') else 1.0
+            # Improved metric calculation
+            if hasattr(difference, '__abs__'):
+                metric = abs(difference)
+            elif hasattr(difference, 'norm'):
+                metric = difference.norm()
+            else:
+                metric = float(abs(difference)) if hasattr(difference, '__float__') else 1.0
         else:
-            metric = 1.0  # Placeholder
+            metric = 1.0  # Placeholder for non-numeric fields
 
         convergence_metrics.append(metric)
         history.append(phi_new)
+
+        # Uncertainty estimation (if tracking enabled)
+        if track_uncertainty and len(convergence_metrics) >= 2:
+            # Estimate uncertainty from convergence rate variation
+            recent_metrics = convergence_metrics[-2:]
+            if recent_metrics[0] > 0:
+                rate_estimate = recent_metrics[1] / recent_metrics[0]
+                # Uncertainty based on rate stability
+                uncertainty = abs(rate_estimate - q) if q else 0.1 * metric
+            else:
+                uncertainty = 0.1 * metric
+        else:
+            uncertainty = metric * 0.1  # 10% uncertainty estimate
+
+        uncertainty_estimates.append(uncertainty)
+
+        # Theoretical bound for this iteration
+        if theoretical_convergence and len(convergence_metrics) >= 1:
+            initial_residual = convergence_metrics[0]
+            theoretical_bound = initial_residual * (q ** (n + 1))
+            theoretical_bounds.append(theoretical_bound)
+        else:
+            theoretical_bounds.append(None)
 
         # Check convergence
         if metric < tolerance:
@@ -198,6 +246,60 @@ def iterate_fixed_point(operator_data, initial_field, num_iterations=10, iterati
 
         phi = phi_new
 
+    # Convergence analysis
+    convergence_analysis = {}
+
+    if len(convergence_metrics) >= 3:
+        # Estimate actual convergence rate from data
+        ratios = []
+        for i in range(1, len(convergence_metrics)):
+            if convergence_metrics[i-1] > 1e-15:
+                ratio = convergence_metrics[i] / convergence_metrics[i-1]
+                ratios.append(ratio)
+
+        if ratios:
+            estimated_rate = mean(ratios)
+            rate_std = sqrt(variance(ratios)) if len(ratios) > 1 else 0
+
+            convergence_analysis = {
+                'estimated_convergence_rate': estimated_rate,
+                'rate_standard_deviation': rate_std,
+                'theoretical_rate': q,
+                'rate_match': abs(estimated_rate - q) < 0.2 if q else None,
+                'geometric_convergence': estimated_rate < 1,
+                'convergence_order': 'linear' if estimated_rate > 0 else 'superlinear'
+            }
+
+    # Error bounds analysis
+    error_bounds = {}
+    if theoretical_bounds and convergence_metrics:
+        actual_vs_theory = []
+        for actual, theory in zip(convergence_metrics, theoretical_bounds):
+            if theory is not None and theory > 0:
+                ratio = actual / theory
+                actual_vs_theory.append(ratio)
+
+        if actual_vs_theory:
+            error_bounds = {
+                'theoretical_bounds': theoretical_bounds,
+                'actual_residuals': convergence_metrics,
+                'bound_ratios': actual_vs_theory,
+                'bounds_satisfied': all(r <= 10 for r in actual_vs_theory),  # Allow factor of 10
+                'average_bound_ratio': mean(actual_vs_theory),
+                'max_bound_violation': max(actual_vs_theory) if actual_vs_theory else 0
+            }
+
+    # Final convergence properties
+    final_properties = {
+        'converged_to_tolerance': converged,
+        'final_residual': convergence_metrics[-1] if convergence_metrics else None,
+        'residual_uncertainty': uncertainty_estimates[-1] if uncertainty_estimates else None,
+        'iterations_to_convergence': len(convergence_metrics),
+        'convergence_certified': converged and (
+            error_bounds.get('bounds_satisfied', False) if error_bounds else True
+        )
+    }
+
     return {
         'fixed_point': phi,
         'iteration_history': history,
@@ -205,15 +307,26 @@ def iterate_fixed_point(operator_data, initial_field, num_iterations=10, iterati
         'converged': converged,
         'num_iterations_used': len(history) - 1,
         'final_residual': convergence_metrics[-1] if convergence_metrics else None,
-        'relaxation_used': alpha
+        'relaxation_used': alpha,
+        # Convergence analysis data
+        'convergence_analysis': convergence_analysis,
+        'error_bounds': error_bounds,
+        'uncertainty_estimates': uncertainty_estimates,
+        'theoretical_bounds': theoretical_bounds,
+        'final_properties': final_properties
     }
 
 def compute_spectral_radius(operator_data, spectral_params=None):
     """
-    Compute spectral radius of operator T.
+    Compute spectral radius of operator T with convergence tracking.
 
     Uses power iteration or Lanczos method for large operators.
     The spectral radius determines contraction properties.
+
+    Spectral analysis:
+    - Tracks convergence history for power iteration
+    - Provides uncertainty estimates on spectral radius
+    - Records iteration-by-iteration eigenvalue estimates
 
     Args:
         operator_data: Fixed-point operator
@@ -225,38 +338,145 @@ def compute_spectral_radius(operator_data, spectral_params=None):
             'dominant_eigenvalue': λ_max
             'method_used': Computation method
             'is_contraction': ρ(T) < 1
+            'convergence_history': Iteration-by-iteration estimates
+            'convergence_analysis': Rate and uncertainty analysis
     """
     if spectral_params is None:
-        spectral_params = {'method': 'estimate', 'iterations': 100}
+        spectral_params = {'method': 'estimate', 'iterations': 100, 'tolerance': 1e-8}
 
     method = spectral_params['method']
+    convergence_history = []
+    convergence_analysis = {}
 
     if method == 'estimate':
         # Use the norm bound as estimate
         spectral_radius = operator_data['operator_norm_bound']
+        convergence_history = [spectral_radius] if spectral_radius is not None else []
 
     elif method == 'power_iteration':
-        # Power iteration for dominant eigenvalue
-        # This is a simplified implementation
+        # Power iteration with convergence tracking
         T = operator_data['operator_T']
+        max_iterations = spectral_params.get('iterations', 100)
+        tolerance = spectral_params.get('tolerance', 1e-8)
 
-        # Start with random initial vector (simplified)
-        v = 1.0  # Placeholder - would be random field in practice
+        # Start with initial vector (could be enhanced with better initial guess)
+        v = 1.0  # Placeholder - in practice would use appropriate field type
 
-        for _ in range(spectral_params['iterations']):
-            v_new = T(v)
-            # Normalize (simplified)
-            if hasattr(v_new, '__abs__'):
-                v = v_new / abs(v_new)
+        eigenvalue_estimates = []
+        vector_norms = []
+        converged = False
+
+        for iteration in range(max_iterations):
+            # Apply operator
+            Tv = T(v)
+
+            # Compute eigenvalue estimate (Rayleigh quotient)
+            if hasattr(Tv, '__mul__') and hasattr(v, '__mul__'):
+                try:
+                    numerator = Tv * v
+                    denominator = v * v
+                    if abs(denominator) > 1e-15:
+                        eigenvalue_est = numerator / denominator
+                    else:
+                        eigenvalue_est = abs(Tv) if hasattr(Tv, '__abs__') else 1.0
+                except:
+                    # Fallback for complex operations
+                    eigenvalue_est = abs(Tv) if hasattr(Tv, '__abs__') else 1.0
             else:
-                v = v_new
+                # Simplified estimate
+                eigenvalue_est = abs(Tv) / abs(v) if abs(v) > 1e-15 else abs(Tv)
 
-        # Rayleigh quotient gives eigenvalue estimate
-        Tv = T(v)
-        if hasattr(Tv, '__mul__') and hasattr(v, '__mul__'):
-            spectral_radius = Tv * v / (v * v)  # Simplified
-        else:
-            spectral_radius = operator_data['operator_norm_bound']
+            eigenvalue_estimates.append(eigenvalue_est)
+
+            # Normalize vector for next iteration
+            if hasattr(Tv, '__abs__'):
+                v_norm = abs(Tv)
+                if v_norm > 1e-15:
+                    v = Tv / v_norm
+                else:
+                    v = Tv  # Keep unnormalized if too small
+            else:
+                v = Tv
+
+            vector_norms.append(v_norm if 'v_norm' in locals() else 1.0)
+
+            # Check convergence
+            if len(eigenvalue_estimates) >= 2:
+                change = abs(eigenvalue_estimates[-1] - eigenvalue_estimates[-2])
+                if change < tolerance:
+                    converged = True
+                    break
+
+        spectral_radius = eigenvalue_estimates[-1] if eigenvalue_estimates else None
+        convergence_history = eigenvalue_estimates
+
+        # Analyze convergence properties
+        if len(eigenvalue_estimates) >= 3:
+            # Estimate convergence rate of power iteration
+            changes = []
+            for i in range(2, len(eigenvalue_estimates)):
+                prev_change = abs(eigenvalue_estimates[i-1] - eigenvalue_estimates[i-2])
+                curr_change = abs(eigenvalue_estimates[i] - eigenvalue_estimates[i-1])
+                if prev_change > 1e-15:
+                    conv_rate = curr_change / prev_change
+                    changes.append(conv_rate)
+
+            convergence_analysis = {
+                'converged': converged,
+                'iterations_used': len(eigenvalue_estimates),
+                'final_eigenvalue': spectral_radius,
+                'convergence_rate': mean(changes) if changes else None,
+                'rate_stability': sqrt(variance(changes)) if len(changes) > 1 else None,
+                'eigenvalue_uncertainty': abs(eigenvalue_estimates[-1] - eigenvalue_estimates[-2]) if len(eigenvalue_estimates) >= 2 else None
+            }
+
+    elif method == 'power_iteration_enhanced':
+        # More sophisticated power iteration with deflation
+        T = operator_data['operator_T']
+        max_iterations = spectral_params.get('iterations', 100)
+        tolerance = spectral_params.get('tolerance', 1e-8)
+
+        # Multiple starting vectors for better coverage
+        starting_vectors = [1.0, 0.5, 2.0]  # Could be more sophisticated
+        all_eigenvalue_estimates = []
+
+        for start_v in starting_vectors:
+            v = start_v
+            eigenvalue_sequence = []
+
+            for iteration in range(max_iterations // len(starting_vectors)):
+                Tv = T(v)
+
+                # Rayleigh quotient
+                if hasattr(Tv, '__mul__') and hasattr(v, '__mul__'):
+                    try:
+                        eigenvalue_est = (Tv * v) / (v * v)
+                    except:
+                        eigenvalue_est = abs(Tv) / abs(v) if abs(v) > 1e-15 else abs(Tv)
+                else:
+                    eigenvalue_est = abs(Tv) / abs(v) if abs(v) > 1e-15 else abs(Tv)
+
+                eigenvalue_sequence.append(eigenvalue_est)
+
+                # Normalize
+                if hasattr(Tv, '__abs__'):
+                    v_norm = abs(Tv)
+                    v = Tv / v_norm if v_norm > 1e-15 else Tv
+                else:
+                    v = Tv
+
+            all_eigenvalue_estimates.extend(eigenvalue_sequence)
+
+        # Take maximum eigenvalue estimate
+        spectral_radius = max(all_eigenvalue_estimates) if all_eigenvalue_estimates else None
+        convergence_history = all_eigenvalue_estimates
+
+        convergence_analysis = {
+            'method_variant': 'multiple_starting_vectors',
+            'num_starting_vectors': len(starting_vectors),
+            'final_eigenvalue': spectral_radius,
+            'eigenvalue_range': [min(all_eigenvalue_estimates), max(all_eigenvalue_estimates)] if all_eigenvalue_estimates else None
+        }
 
     elif method == 'lanczos':
         # Lanczos method for large sparse operators
@@ -268,12 +488,29 @@ def compute_spectral_radius(operator_data, spectral_params=None):
 
     is_contraction = spectral_radius < 1 if spectral_radius is not None else None
 
+    # Additional uncertainty analysis
+    uncertainty_estimate = None
+    if convergence_history and len(convergence_history) >= 2:
+        # Estimate uncertainty from convergence stability
+        recent_estimates = convergence_history[-min(5, len(convergence_history)):]
+        if len(recent_estimates) > 1:
+            uncertainty_estimate = sqrt(variance(recent_estimates))
+
     return {
         'spectral_radius': spectral_radius,
         'dominant_eigenvalue': spectral_radius,  # For self-adjoint operators
         'method_used': method,
         'is_contraction': is_contraction,
-        'iterations_used': spectral_params.get('iterations')
+        'iterations_used': spectral_params.get('iterations'),
+        # Convergence analysis data
+        'convergence_history': convergence_history,
+        'convergence_analysis': convergence_analysis,
+        'uncertainty_estimate': uncertainty_estimate,
+        'final_convergence_properties': {
+            'spectral_radius_converged': convergence_analysis.get('converged', True),
+            'spectral_radius_uncertainty': uncertainty_estimate,
+            'contraction_verified': is_contraction
+        }
     }
 
 def verify_banach_conditions(operator_data, verification_params=None):

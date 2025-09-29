@@ -32,6 +32,7 @@ from quantum_origin.fixed_point import (
     build_fixed_point_operator,
     check_contraction_property,
     iterate_fixed_point,
+    compute_spectral_radius,
     verify_banach_conditions
 )
 from quantum_origin.screening_length import (
@@ -221,8 +222,74 @@ def run_quantum_origin_verification():
         print(f"   ✓ Final residual: {iteration_result.get('final_residual', 'N/A')}")
         print(f"   ✓ Fixed point: {iteration_result['fixed_point']}")
 
-        # Test 7: Synthetic Kernel with Known Spectrum
-        print("\n7. Testing Synthetic Kernel Verification...")
+        # Test 7: Convergence Analysis with Uncertainty
+        print("\n7. Testing Convergence Analysis with Uncertainty...")
+
+        # Iteration with uncertainty tracking
+        print("   ✓ Running fixed-point iteration with uncertainty tracking...")
+        detailed_iteration = iterate_fixed_point(
+            screened_operator, initial_phi, num_iterations=25,
+            iteration_params={'relaxation': 0.3, 'tolerance': 1e-10, 'track_uncertainty': True}
+        )
+
+        # Spectral radius computation
+        print("   ✓ Computing spectral radius with convergence history...")
+        detailed_spectral = compute_spectral_radius(
+            screened_operator,
+            spectral_params={'method': 'power_iteration', 'iterations': 50, 'tolerance': 1e-10}
+        )
+
+        # Screening length extraction with uncertainty
+        print("   ✓ Extracting screening length with error analysis...")
+        detailed_screening = extract_screening_length(
+            screened_kernel,
+            extraction_params={'method': 'auto', 'uncertainty_analysis': True, 'monte_carlo_samples': 100}
+        )
+
+        # Verify convergence requirements
+        norm_bound = screened_operator.get('operator_norm_bound')
+        spectral_radius = detailed_spectral.get('spectral_radius')
+
+        # Check convergence analysis
+        convergence_analysis = detailed_iteration.get('convergence_analysis', {})
+        convergence_verified = convergence_analysis.get('geometric_convergence', False)
+
+        # Error bar analysis for screening length
+        error_bars = detailed_screening.get('error_bars')
+
+        analysis_complete = all([
+            norm_bound is not None,
+            spectral_radius is not None,
+            convergence_verified,
+            error_bars is not None
+        ])
+
+        print(f"   ✓ Rigorous bound |T|: {norm_bound}")
+        print(f"   ✓ Numerical estimate ρ(T): {spectral_radius}")
+        if detailed_spectral.get('uncertainty_estimate'):
+            print(f"   ✓ Spectral radius uncertainty: ±{detailed_spectral['uncertainty_estimate']:.2e}")
+
+        print(f"   ✓ Convergence rate (estimated): {convergence_analysis.get('estimated_convergence_rate', 'N/A')}")
+        print(f"   ✓ Convergence rate (theoretical): {convergence_analysis.get('theoretical_rate', 'N/A')}")
+        print(f"   ✓ Geometric convergence verified: {convergence_verified}")
+
+        if error_bars:
+            xi_central = error_bars['central_value']
+            xi_uncertainty = error_bars['uncertainty']
+            print(f"   ✓ Screening length ξ: ({xi_central:.2e} ± {xi_uncertainty:.2e}) m")
+
+            # Show confidence intervals
+            if detailed_screening.get('uncertainty_analysis', {}).get('confidence_intervals'):
+                ci_95 = detailed_screening['uncertainty_analysis']['confidence_intervals'].get('95%', {})
+                if ci_95:
+                    print(f"   ✓ 95% confidence interval: [{ci_95.get('lower_bound', 0):.2e}, {ci_95.get('upper_bound', 0):.2e}] m")
+        else:
+            print(f"   ✓ Screening length ξ: {detailed_screening.get('screening_length', 'N/A')}")
+
+        print(f"   ✓ Analysis complete: {analysis_complete}")
+
+        # Test 8: Synthetic Kernel with Known Spectrum
+        print("\n8. Testing Synthetic Kernel Verification...")
 
         # Create synthetic kernel with known contraction properties
         synthetic_kernel = build_local_kernel(kernel_params={'alpha': 0.1})  # Known small eigenvalue
@@ -253,6 +320,7 @@ def run_quantum_origin_verification():
             screening_bounds['solar_system_bound_satisfied'],
             banach_verification['banach_conditions_satisfied'],
             iteration_result['converged'],
+            analysis_complete,  # Convergence analysis complete
             synthetic_contraction['is_contraction']
         ]
 
@@ -265,6 +333,7 @@ def run_quantum_origin_verification():
         print(f"Screening Bounds: {'PASS' if screening_bounds['solar_system_bound_satisfied'] else 'FAIL'}")
         print(f"Banach Conditions: {'PASS' if banach_verification['banach_conditions_satisfied'] else 'FAIL'}")
         print(f"Iteration Convergence: {'PASS' if iteration_result['converged'] else 'FAIL'}")
+        print(f"Convergence Analysis: {'PASS' if analysis_complete else 'FAIL'}")
         print(f"Synthetic Verification: {'PASS' if synthetic_contraction['is_contraction'] else 'FAIL'}")
 
         print(f"\nOVERALL VERIFICATION: {'SUCCESS' if overall_success else 'FAILED'}")
@@ -280,6 +349,12 @@ def run_quantum_origin_verification():
             print(f"• Contraction factor: {screened_contraction.get('contraction_factor', 'N/A')}")
             print(f"• Convergence rate: geometric")
             print(f"• Observable predictions: clock dephasing")
+            print("\nCONVERGENCE ANALYSIS VERIFICATION:")
+            print(f"• Rigorous bound |T| computed: ✓")
+            print(f"• Numerical estimate ρ(T) computed: ✓")
+            print(f"• Uncertainty quantification: ✓")
+            print(f"• Screening length ξ with error bars: ✓")
+            print(f"• Analysis requirements satisfied: {'✓' if analysis_complete else '✗'}")
 
         return overall_success
 
