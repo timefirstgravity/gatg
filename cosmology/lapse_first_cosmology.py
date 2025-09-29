@@ -152,16 +152,16 @@ def verify_flrw_reconstruction(lapse_data, spatial_data, dynamics_data):
     expected_g_phph = a**2 * r**2 * sin(th)**2
 
     # Verify reconstruction
-    try:
-        g_tt_correct = (reconstructed_g_tt - expected_g_tt).simplify_full() == 0
-        g_rr_correct = (reconstructed_g_rr - expected_g_rr).simplify_full() == 0
-        g_thth_correct = (reconstructed_g_thth - expected_g_thth).simplify_full() == 0
-        g_phph_correct = (reconstructed_g_phph - expected_g_phph).simplify_full() == 0
-    except:
-        g_tt_correct = (reconstructed_g_tt == expected_g_tt)
-        g_rr_correct = (reconstructed_g_rr == expected_g_rr)
-        g_thth_correct = (reconstructed_g_thth == expected_g_thth)
-        g_phph_correct = (reconstructed_g_phph == expected_g_phph)
+    # Convert to symbolic expressions to ensure simplify_full() is available
+    g_tt_diff = SR(reconstructed_g_tt - expected_g_tt)
+    g_rr_diff = SR(reconstructed_g_rr - expected_g_rr)
+    g_thth_diff = SR(reconstructed_g_thth - expected_g_thth)
+    g_phph_diff = SR(reconstructed_g_phph - expected_g_phph)
+
+    g_tt_correct = g_tt_diff.simplify_full() == 0
+    g_rr_correct = g_rr_diff.simplify_full() == 0
+    g_thth_correct = g_thth_diff.simplify_full() == 0
+    g_phph_correct = g_phph_diff.simplify_full() == 0
 
     all_components_correct = g_tt_correct and g_rr_correct and g_thth_correct and g_phph_correct
 
