@@ -2,11 +2,14 @@
 
 ## Primary Purpose
 
-This project performs direct symbolic computation with SageMath
-to prove that **Gravity as Temporal Geometry (GATG)** (lapse-first General Relativity)
+This project has two complementary scientific goals:
+
+### Goal 1: Mathematical Equivalence Verification
+Perform direct symbolic computation with SageMath to prove that
+**Gravity as Temporal Geometry (GATG)** (lapse-first General Relativity)
 is mathematically equivalent to standard GR.
 
-**Mathematical Goal:** Prove that two different formulations of General Relativity
+**Mathematical Target:** Prove that two different formulations of General Relativity
 yield identical physical results:
 
 1. **Standard GR**: Start with 4D spacetime metric perturbations
@@ -16,9 +19,16 @@ yield identical physical results:
 coupled Einstein equations in standard GR, reduces to a single simple ODE
 when approached through the lapse-first GATG formulation: `r A'(r) + A(r) - 1 = 0`
 
-**Verification Target:** Prove mathematically that both formulations are equivalent.
+### Goal 2: Theoretical Exploration and Experimental Support
+Explore the theoretical implications of the lapse-first reformulation and
+develop experimental protocols to test predictions unique to this perspective.
 
-**Research Target:** Explore the implications of time first gravity
+**Research Targets:**
+- Quantum origin of classical spacetime from fixed-point emergence
+- Gravitational dephasing signatures in precision atomic clocks
+- Quantum commutator witness protocols for temporal geometry
+- Novel physical insights from the temporal potential perspective
+- Observable experimental predictions for laboratory and astronomical tests
 
 ## Python/Sage Execution Instructions
 
