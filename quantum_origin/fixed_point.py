@@ -208,10 +208,12 @@ def iterate_fixed_point(operator_data, initial_field, num_iterations=10, iterati
                 metric = abs(difference)
             elif hasattr(difference, 'norm'):
                 metric = difference.norm()
+            elif hasattr(difference, '__float__'):
+                metric = float(abs(difference))
             else:
-                metric = float(abs(difference)) if hasattr(difference, '__float__') else 1.0
+                raise TypeError(f"Field type {type(difference)} does not support required operations (abs, norm, or float conversion)")
         else:
-            metric = 1.0  # Placeholder for non-numeric fields
+            raise TypeError(f"Field type {type(phi)} does not support subtraction required for convergence metric")
 
         convergence_metrics.append(metric)
         history.append(phi_new)
@@ -372,19 +374,22 @@ def compute_spectral_radius(operator_data, spectral_params=None):
 
             # Compute eigenvalue estimate (Rayleigh quotient)
             if hasattr(Tv, '__mul__') and hasattr(v, '__mul__'):
-                try:
-                    numerator = Tv * v
-                    denominator = v * v
-                    if abs(denominator) > 1e-15:
-                        eigenvalue_est = numerator / denominator
-                    else:
-                        eigenvalue_est = abs(Tv) if hasattr(Tv, '__abs__') else 1.0
-                except:
-                    # Fallback for complex operations
-                    eigenvalue_est = abs(Tv) if hasattr(Tv, '__abs__') else 1.0
+                numerator = Tv * v
+                denominator = v * v
+                if abs(denominator) > 1e-15:
+                    eigenvalue_est = numerator / denominator
+                elif hasattr(Tv, '__abs__'):
+                    eigenvalue_est = abs(Tv)
+                else:
+                    raise TypeError(f"Cannot compute eigenvalue: field type {type(Tv)} does not support required operations")
+            elif hasattr(Tv, '__abs__') and hasattr(v, '__abs__'):
+                # Simplified estimate using absolute values
+                if abs(v) > 1e-15:
+                    eigenvalue_est = abs(Tv) / abs(v)
+                else:
+                    eigenvalue_est = abs(Tv)
             else:
-                # Simplified estimate
-                eigenvalue_est = abs(Tv) / abs(v) if abs(v) > 1e-15 else abs(Tv)
+                raise TypeError(f"Field types {type(Tv)}, {type(v)} do not support required operations for eigenvalue estimation")
 
             eigenvalue_estimates.append(eigenvalue_est)
 
@@ -449,12 +454,21 @@ def compute_spectral_radius(operator_data, spectral_params=None):
 
                 # Rayleigh quotient
                 if hasattr(Tv, '__mul__') and hasattr(v, '__mul__'):
-                    try:
-                        eigenvalue_est = (Tv * v) / (v * v)
-                    except:
-                        eigenvalue_est = abs(Tv) / abs(v) if abs(v) > 1e-15 else abs(Tv)
+                    numerator = Tv * v
+                    denominator = v * v
+                    if abs(denominator) > 1e-15:
+                        eigenvalue_est = numerator / denominator
+                    elif hasattr(Tv, '__abs__'):
+                        eigenvalue_est = abs(Tv)
+                    else:
+                        raise TypeError(f"Cannot compute eigenvalue: field type {type(Tv)} does not support required operations")
+                elif hasattr(Tv, '__abs__') and hasattr(v, '__abs__'):
+                    if abs(v) > 1e-15:
+                        eigenvalue_est = abs(Tv) / abs(v)
+                    else:
+                        eigenvalue_est = abs(Tv)
                 else:
-                    eigenvalue_est = abs(Tv) / abs(v) if abs(v) > 1e-15 else abs(Tv)
+                    raise TypeError(f"Field types {type(Tv)}, {type(v)} do not support required operations for eigenvalue estimation")
 
                 eigenvalue_sequence.append(eigenvalue_est)
 
