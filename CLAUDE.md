@@ -76,6 +76,35 @@ Documentation belongs in comments and docstrings, NOT in function return values.
 
 The integrity of the scientific computation is paramount across the entire GATG project.
 
+### **RULE 3: ABSOLUTELY NO SILENT FALLBACKS OR TRY/EXCEPT HIDING**
+
+**CRITICAL RULE:** Computations must work correctly or fail loudly.
+
+**ABSOLUTELY PROHIBITED:**
+
+- Silent fallbacks (try/except with alternative computation)
+- Returning placeholder strings when computation fails
+- Catching exceptions and continuing with different logic
+- Any form of "graceful degradation" that hides errors
+
+**REQUIRED:**
+
+- All computations must succeed or raise explicit errors
+- Failed computations must halt execution with clear error messages
+- If syntax is wrong, fix the syntax - don't work around it
+- If mathematics fails, identify and fix the mathematical error
+
+**EXAMPLES:**
+
+- ❌ BAD: `try: result = complex_calculation() except: result = "simplified_result"`
+- ❌ BAD: `if computation_fails: return "fallback_value"`
+- ✅ GOOD: `result = complex_calculation()  # Let it fail if wrong`
+- ✅ GOOD: `if precondition_not_met: raise ValueError("Clear error message")`
+
+**RATIONALE:** Silent fallbacks hide bugs, produce incorrect scientific results,
+and compromise the mathematical rigor of the verification. Every computation
+must be mathematically exact or the program must stop with a clear error.
+
 ## Debug Script Management Rule
 
 **ALWAYS CLEAN UP DEBUG SCRIPTS: DEBUG → EXTRACT → INTEGRATE → DELETE**

@@ -49,6 +49,13 @@ while revealing the deeper geometric structure of gravity.
 | **[coordinate_transforms/](coordinate_transforms/)** | General coordinate changes | Identical transformation properties and covariance |
 | **[flux_law/](flux_law/)** | Energy-momentum conservation | Identical conservation laws and Vaidya dynamics |
 
+### Quantum Applications
+
+| Module | Verification Target | Key Result |
+|--------|-------------------|------------|
+| **[quantum_witness/](quantum_witness/)** | Quantum gravitational signatures | Q1 commutator witness detection protocols for GATG testing |
+| **[dephasing_observatory/](dephasing_observatory/)** | Gravitational dephasing measurements | Clock network experiments for GATG verification |
+
 ## What This Project Proves
 
 **Mathematical Equivalence:** Every module demonstrates that Standard GR and GATG are mathematically identical, producing:
@@ -60,6 +67,8 @@ while revealing the deeper geometric structure of gravity.
 - ✓ Identical **degrees of freedom** and propagation properties
 
 **Computational Advantage:** The GATG approach often provides simpler paths to solutions while maintaining full mathematical rigor.
+
+**Experimental Applications:** The quantum modules provide testable predictions for gravitational dephasing and quantum signature detection using atomic clocks and precision measurement networks.
 
 ## Scientific Methodology
 
@@ -102,7 +111,7 @@ sage -python verification.py
 
 ### Project Structure
 
-```
+```markdown
 GATG/
 ├── schwarzschild/            # Schwarzschild solution equivalence
 ├── kerr/                     # Kerr solution equivalence
@@ -112,6 +121,8 @@ GATG/
 ├── experimental_predictions/ # Observable effects equivalence
 ├── coordinate_transforms/    # Coordinate transformation equivalence
 ├── flux_law/                 # Conservation law equivalence
+├── quantum_witness/          # Quantum gravitational signature detection
+├── dephasing_observatory/    # Gravitational dephasing measurements
 └── core/                     # Shared mathematical utilities
 ```
 
