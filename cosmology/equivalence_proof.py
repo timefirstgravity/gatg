@@ -29,23 +29,15 @@ def verify_friedmann_equation_equivalence(standard_result, lapse_first_result):
     lapse_first_friedmann = lapse_first_result['hamiltonian_constraint']
 
     # Compare the equations (both should be H² - (8πG/3c²)ρ + kc²/a² = 0)
-    try:
-        equation_difference = (standard_friedmann - lapse_first_friedmann).simplify_full()
-        equations_identical = (equation_difference == 0)
-    except:
-        equations_identical = (standard_friedmann == lapse_first_friedmann)
-        equation_difference = 0
+    equation_difference = SR(standard_friedmann - lapse_first_friedmann).simplify_full()
+    equations_identical = (equation_difference == 0)
 
     # Compare Hubble parameters
     standard_H = standard_result['hubble_parameter']
     lapse_first_H = lapse_first_result['hubble_parameter']
 
-    try:
-        hubble_difference = (standard_H - lapse_first_H).simplify_full()
-        hubble_identical = (hubble_difference == 0)
-    except:
-        hubble_identical = (standard_H == lapse_first_H)
-        hubble_difference = 0
+    hubble_difference = SR(standard_H - lapse_first_H).simplify_full()
+    hubble_identical = (hubble_difference == 0)
 
     return {
         'friedmann_equation_difference': equation_difference,
@@ -70,23 +62,15 @@ def verify_matter_era_solutions(standard_result, lapse_first_result):
     standard_a = standard_result['scale_factor_matter']
     lapse_first_a = lapse_first_result['scale_factor_lapse']
 
-    try:
-        a_difference = (standard_a - lapse_first_a).simplify_full()
-        scale_factors_identical = (a_difference == 0)
-    except:
-        scale_factors_identical = (standard_a == lapse_first_a)
-        a_difference = 0
+    a_difference = SR(standard_a - lapse_first_a).simplify_full()
+    scale_factors_identical = (a_difference == 0)
 
     # Hubble parameter solutions
     standard_H_matter = standard_result['hubble_parameter_matter']
     lapse_first_H_matter = lapse_first_result['hubble_parameter_lapse']
 
-    try:
-        H_difference = (standard_H_matter - lapse_first_H_matter).simplify_full()
-        hubble_solutions_identical = (H_difference == 0)
-    except:
-        hubble_solutions_identical = (standard_H_matter == lapse_first_H_matter)
-        H_difference = 0
+    H_difference = SR(standard_H_matter - lapse_first_H_matter).simplify_full()
+    hubble_solutions_identical = (H_difference == 0)
 
     # Age of universe
     standard_age = standard_result['age_of_universe']
@@ -94,12 +78,8 @@ def verify_matter_era_solutions(standard_result, lapse_first_result):
     H0 = var('H_0')
     lapse_first_age = 2/(3*H0)
 
-    try:
-        age_difference = (standard_age - lapse_first_age).simplify_full()
-        ages_identical = (age_difference == 0)
-    except:
-        ages_identical = (standard_age == lapse_first_age)
-        age_difference = 0
+    age_difference = SR(standard_age - lapse_first_age).simplify_full()
+    ages_identical = (age_difference == 0)
 
     return {
         'scale_factor_difference': a_difference,
@@ -126,24 +106,16 @@ def verify_observable_equivalence(standard_result, lapse_first_result):
     standard_dL = standard_result['luminosity_distance']
     lapse_first_dL = lapse_first_result['luminosity_distance_lapse']
 
-    try:
-        dL_difference = (standard_dL - lapse_first_dL).simplify_full()
-        luminosity_distances_identical = (dL_difference == 0)
-    except:
-        luminosity_distances_identical = (standard_dL == lapse_first_dL)
-        dL_difference = 0
+    dL_difference = SR(standard_dL - lapse_first_dL).simplify_full()
+    luminosity_distances_identical = (dL_difference == 0)
 
     # Distance modulus (depends on luminosity distance)
     standard_mu = standard_result['distance_modulus']
     # Lapse-first distance modulus would be identical since dL is identical
     lapse_first_mu = 5 * log(lapse_first_dL, 10) + 25
 
-    try:
-        mu_difference = (standard_mu - lapse_first_mu).simplify_full()
-        distance_moduli_identical = (mu_difference == 0)
-    except:
-        distance_moduli_identical = (standard_mu == lapse_first_mu)
-        mu_difference = 0
+    mu_difference = SR(standard_mu - lapse_first_mu).simplify_full()
+    distance_moduli_identical = (mu_difference == 0)
 
     return {
         'luminosity_distance_difference': dL_difference,
