@@ -40,16 +40,11 @@ def verify_schwarzschild_coordinate_equivalence(standard_schwarzschild, lapse_fi
     g_rr_reconstructed = gamma_rr
 
     # Verify equivalence
-    try:
-        g_tt_difference = (g_tt_std - g_tt_reconstructed).simplify_full()
-        g_rr_difference = (g_rr_std - g_rr_reconstructed).simplify_full()
+    g_tt_difference = (g_tt_std - g_tt_reconstructed).simplify_full()
+    g_rr_difference = (g_rr_std - g_rr_reconstructed).simplify_full()
 
-        g_tt_equivalent = (g_tt_difference == 0)
-        g_rr_equivalent = (g_rr_difference == 0)
-    except:
-        # Handle cases where symbolic simplification might fail
-        g_tt_equivalent = (g_tt_std == g_tt_reconstructed)
-        g_rr_equivalent = (g_rr_std == g_rr_reconstructed)
+    g_tt_equivalent = (g_tt_difference == 0)
+    g_rr_equivalent = (g_rr_difference == 0)
 
     # Verify shift vector is zero (static spacetime)
     shift_zero = all(component == 0 for component in shift)
@@ -129,11 +124,8 @@ def verify_coordinate_transformation_consistency(standard_transform, lapse_first
     lapse_first_coord_transform = lapse_first_transform['coordinate_transformation']
 
     # Both should give same coordinate relation
-    try:
-        transform_difference = (standard_v_transform - lapse_first_coord_transform).simplify_full()
-        transformations_equivalent = (transform_difference == 0)
-    except:
-        transformations_equivalent = (standard_v_transform == lapse_first_coord_transform)
+    transform_difference = (standard_v_transform - lapse_first_coord_transform).simplify_full()
+    transformations_equivalent = (transform_difference == 0)
 
     # Verify Jacobian consistency
     standard_jacobian = standard_transform['jacobian_determinant']
