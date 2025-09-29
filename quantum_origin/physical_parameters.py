@@ -217,9 +217,20 @@ def estimate_realistic_capacity(lapse_amplitude, observation_time, spectrum_mode
         # Spectrum at zero frequency
         S_Phi_zero = k_B * T_bath * eta_damping * G_R_scale**2
 
+    elif spectrum_model == 'thermal':
+        # Thermal bath: S_Φ(0) ∝ k_B T
+        k_B = 1.380649e-23  # J/K
+        T_bath = 300  # K (room temperature)
+        hbar = 1.054571817e-34
+        c = 299792458
+
+        # Thermal noise spectrum at zero frequency
+        # Scale by (ℏ/Mc²)² for dimensionless lapse fluctuations
+        M_planck = sqrt(hbar * c**3 / 6.67430e-11)  # kg
+        S_Phi_zero = k_B * T_bath * (hbar / (M_planck * c**2))**2
+
     else:
-        # Simple thermal estimate
-        S_Phi_zero = lapse_amplitude**2 * 1e-20  # Order of magnitude
+        raise ValueError(f"Unsupported spectrum_model: '{spectrum_model}'. Use 'ohmic' or 'thermal'.")
 
     # Capacity: Ξ ≃ T S_Φ(0)
     capacity_Xi = observation_time * S_Phi_zero
