@@ -4,12 +4,32 @@
 GATG Quantum Origin: Capacity Functional
 
 Implements the capacity functional C[Φ] that maps lapse field to capacity Ξ.
-Connects to dephasing observatory module for experimental predictions.
 
-From Quantum Origin paper:
-- Capacity: Ξ = C[Φ] from CTP noise kernel
-- FDT relation: S_Φ = |G_R|² S_η
-- Visibility: V = exp[-½ω²Ξ]
+QUANTUM MECHANICAL DERIVATION (not an assumption):
+
+The capacity Ξ is derived from the CTP Keldysh noise kernel via:
+    Ξ(x) = ∫₀^T ∫₀^T C_Φ(x;t,t') dt dt'    (Eq. 82, page 24)
+
+where C_Φ is the Keldysh correlator from integrating out the environment:
+    C_Φ(t,t') = ⟨δΦ(t) δΦ(t')⟩ ∝ N(t,t')    (Eq. 88, page 24)
+
+The lapse spectrum follows from Fluctuation-Dissipation Theorem:
+    S_Φ(ω,k) = |G_R(ω,k)|² S_η(ω,k)    (Eq. 52, page 14)
+    S_η(ω,k) = 2 ν(ω,T_B) Re Γ(ω,k)    (Eq. 53, page 14; Eq. 101, page 28)
+
+For Ohmic bath (low-frequency):
+    S_Φ^loc(0) = ν(0,T_B) × η/(4πm)    (Eq. 107, page 29)
+
+Reference:
+    DOI: https://doi.org/10.5281/zenodo.17015383
+    Section 5.1 (pages 14-15): Predictive stochastic lapse from stress-energy fluctuations
+    Appendix E.3 (pages 28-29): Capacity Ξ over a coarse window
+    Appendix F (pages 29-31): Einstein-Langevin route
+
+Physical Content:
+- Capacity functional C[Φ] derived from quantum environment, not posited
+- FDT ensures S_Φ = |G_R|² S_η with no free parameters beyond (T_B, η, m)
+- Connects to observable clock dephasing: V = exp[-½ω²Ξ] (Eq. 46, page 13)
 """
 
 from sage.all import *
@@ -21,17 +41,35 @@ def compute_capacity_from_kernel(kernel_data, lapse_field, window_time, capacity
     """
     Compute capacity Ξ = C[Φ] from CTP kernel via FDT and spectral integration.
 
-    Complete physics implementation from Quantum Origin paper (Appendix E, pages 26-29):
+    QUANTUM MECHANICAL DERIVATION (Appendix E, pages 26-29):
 
-    Physics chain:
-    1. Langevin equation: (-∇² + m²)δΦ + ∫ Γ(t-t′)∂_t′δΦ dt′ = η(t)
-    2. Response function: G_R(ω,k) = [k² + m² - iωΓ(ω)]⁻¹
-    3. FDT relation: S_Φ(ω,k) = |G_R(ω,k)|² × 2ν(ω,T_B) Re Γ(ω)
-    4. Capacity integral: Ξ = ∫ (dω/2π) |W_T(ω)|² S_Φ(ω)
-    5. Long-time limit: Ξ ≃ T × S_Φ(0)
+    Starting Point: Large-N bosonic bath coupled to lapse field
+        H_int = -Σ_a g_a q_a Φ(x_a,t)    (Eq. E.1, page 27)
 
-    For Ohmic bath (Eq. 107): S_Φ^loc(0) = ν(0,T_B) × η / (4πm)
-    where ν(0,T_B) = k_B T_B / ℏ (classical thermal factor)
+    Step 1: Integrate out bath on CTP contour → influence functional
+        S_IF[Φ⁺,Φ⁻] with Keldysh kernel D^K    (Eq. 87, page 24)
+
+    Step 2: Generalized Langevin equation for lapse fluctuations
+        (-∇² + m²)δΦ + ∫ Γ(t-t′)∂_t′δΦ dt′ = η(t)    (Eq. 99, page 28)
+
+    Step 3: Response function from Dyson equation
+        G_R(ω,k) = [k² + m² - iωΓ(ω,k)]⁻¹    (Eq. 100, page 28)
+
+    Step 4: Fluctuation-Dissipation Theorem
+        S_Φ(ω,k) = |G_R(ω,k)|² × S_η(ω,k)    (Eq. 100, page 28)
+        S_η(ω,k) = 2 ν(ω,T_B) Re Γ(ω,k)    (Eq. 101, page 28)
+
+    Step 5: Capacity from spectral integration
+        Ξ = ∫ (dω/2π) |W_T(ω)|² S_Φ(ω)    (Eq. 102-106, page 28)
+
+    Step 6: Long-time limit
+        Ξ ≃ T × S_Φ(0)    (page 28, after Eq. 106)
+
+    For Ohmic bath (Eq. 107, page 29):
+        S_Φ^loc(0) = ν(0,T_B) × η / (4πm)
+        where ν(0,T_B) = k_B T_B / ℏ (classical thermal factor)
+
+    NO FREE PARAMETERS: All determined by (J(ω), T_B, m) from microphysics
 
     Args:
         kernel_data: CTP kernel from ctp_kernel module with screening mass m

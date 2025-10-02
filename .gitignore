@@ -133,4 +133,4 @@ recovered_*.txt
 # Generated plots and visualizations
 quantum_origin/plots/
 
-sage_docs/
+sage_docs

@@ -4,13 +4,35 @@
 GATG Quantum Origin: CTP Kernel Implementation
 
 Closed Time Path (CTP) kernel C that maps lapse field to capacity.
-The kernel embodies quantum fluctuation-dissipation relations and
-determines the emergent screening length ξ.
 
-From Quantum Origin paper:
-- Local kernel: δ-function correlations
-- Quasi-local: finite correlation length
-- Screened: exponential decay with screening mass m = 1/ξ
+IMPORTANT: The CTP kernel is DERIVED from quantum mechanics, not assumed.
+
+Quantum Derivation (Appendix E, pages 26-29):
+    Starting from large-N bosonic bath with Hamiltonian H_B and linear coupling:
+        H_int = -Σ_a g_a q_a Φ(x_a, t)
+
+    Integrating out bath modes on the CTP contour yields the influence functional:
+        S_IF[Φ⁺, Φ⁻] with Keldysh (noise) kernel D^K and retarded/advanced kernels D^(R/A)
+
+    The kernels are related by the Fluctuation-Dissipation Theorem (FDT):
+        D^K(ω) = π J(ω) coth(βω/2)    (Eq. E.2, page 27)
+        S_η(ω,k) = 2 ν(ω,T_B) Re Γ(ω,k)    (Eq. 101, page 28)
+
+    where J(ω) is the bath spectral density (microphysics input).
+
+The kernel embodies quantum fluctuation-dissipation relations and
+determines the emergent screening length ξ = 1/m.
+
+Reference:
+    DOI: https://doi.org/10.5281/zenodo.17015383
+    Section 5.1 (pages 14-15): Stochastic lapse from stress-energy fluctuations
+    Appendix E (pages 26-29): Complete microphysical derivation
+    Appendix F (pages 29-31): Einstein-Langevin route to lapse fluctuations
+
+Kernel Types Implemented:
+- Local kernel: δ-function correlations (m → ∞ limit)
+- Quasi-local: finite correlation length ℓ_c
+- Screened: exponential decay with screening mass m = 1/ξ (Yukawa Green function)
 """
 
 from sage.all import *
